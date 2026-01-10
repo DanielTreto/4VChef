@@ -5,6 +5,7 @@ namespace App\Model;
 class RecetaDTO
 {
     public function __construct(
+        public int $id,
         public string $titulo,
         public int $comensales,
         public TipoRecetaDTO $tipo,

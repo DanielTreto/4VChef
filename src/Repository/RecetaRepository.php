@@ -16,20 +16,18 @@ class RecetaRepository extends ServiceEntityRepository
         parent::__construct($registry, Receta::class);
     }
 
-    //    /**
-    //     * @return Receta[] Returns an array of Receta objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('r')
-    //            ->andWhere('r.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('r.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+    * @return Receta[] Returns an array of Receta objects, that fits by type
+    */
+    public function findByType($tipo): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.tipo = :val')
+            ->setParameter('val', $tipo)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 
     //    public function findOneBySomeField($value): ?Receta
     //    {

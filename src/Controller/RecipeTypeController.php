@@ -26,12 +26,12 @@ final class RecipeTypeController extends AbstractController
                                         ->findAll();
 
             // Convierto de Entidades a DTO
-            $tipoRestaurantesDTO = [];
+            $tipoRecetaDTO = [];
             foreach ($tiposRecetasBBDD as $tipoRecetaEntidad) {
-                $tipoRestaurantesDTO[] = new TipoRecetaDTO($tipoRecetaEntidad->getId(),$tipoRecetaEntidad->getNombre(),$tipoRecetaEntidad->getDescripcion());
+                $tipoRecetaDTO[] = new TipoRecetaDTO($tipoRecetaEntidad->getId(),$tipoRecetaEntidad->getNombre(),$tipoRecetaEntidad->getDescripcion());
             }
 
-            return $this->json($tipoRestaurantesDTO);
+            return $this->json($tipoRecetaDTO);
 
         } catch (\Throwable $th) {
             $errorMensaje = new RespuestaErrorDTO(1000, "Error General");

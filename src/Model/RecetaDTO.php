@@ -7,7 +7,7 @@ class RecetaDTO
     public function __construct(
         public string $titulo,
         public int $comensales,
-        public array $tipos = [],
+        public TipoRecetaDTO $tipo,
         public array $ingredientes = [],
         public array $pasos = [],
         public array $valoresNutritivos = []

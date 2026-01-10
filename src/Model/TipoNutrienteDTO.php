@@ -2,9 +2,10 @@
 
 namespace App\Model;
 
-class NutrienteDTO
+class TipoNutrienteDTO
 {
     public function __construct(
+        public int $id,
         public string $nombre,
         public string $unidad
     ) {}

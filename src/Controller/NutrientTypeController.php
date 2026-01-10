@@ -2,33 +2,32 @@
 
 namespace App\Controller;
 
+use App\Entity\TipoNutriente;
+use App\Model\TipoNutrienteDTO;
 use App\Model\RespuestaErrorDTO;
-use App\Model\TipoRecetaDTO;
-use App\Entity\TipoReceta;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-final class RecipeTypeController extends AbstractController
+final class NutrientTypeController extends AbstractController
 {
-
     public function __construct(private EntityManagerInterface $entityManager) {}
 
-    #[Route('/recipe-types', name: 'search_recipe_types', methods: ['GET'])]
-    public function getAllRecipeTypes(): JsonResponse
+    #[Route('/nutrient-types', name: 'search_nutrients', methods: ['GET'])]
+    public function getAllNutrientTypes(): JsonResponse
     {
         try {
 
             // Recupero la información de BBDD
             $tiposRecetasBBDD = $this->entityManager
-                                        ->getRepository(TipoReceta::class)
+                                        ->getRepository(TipoNutriente::class)
                                         ->findAll();
 
             // Convierto de Entidades a DTO
             $tipoRestaurantesDTO = [];
             foreach ($tiposRecetasBBDD as $tipoRecetaEntidad) {
-                $tipoRestaurantesDTO[] = new TipoRecetaDTO($tipoRecetaEntidad->getId(),$tipoRecetaEntidad->getNombre(),$tipoRecetaEntidad->getDescripcion());
+                $tipoRestaurantesDTO[] = new TipoNutrienteDTO($tipoRecetaEntidad->getId(),$tipoRecetaEntidad->getNombre(),$tipoRecetaEntidad->getUnidad());
             }
 
             return $this->json($tipoRestaurantesDTO);

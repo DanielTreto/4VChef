@@ -27,13 +27,13 @@ class Receta
     /**
      * @var Collection<int, Ingrediente>
      */
-    #[ORM\OneToMany(targetEntity: Ingrediente::class, mappedBy: 'receta', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Ingrediente::class, mappedBy: 'receta', cascade: ['persist'], orphanRemoval: true)]
     private Collection $ingredientes;
 
     /**
      * @var Collection<int, Paso>
      */
-    #[ORM\OneToMany(targetEntity: Paso::class, mappedBy: 'receta', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Paso::class, mappedBy: 'receta', cascade: ['persist'], orphanRemoval: true)]
     private Collection $pasos;
 
     /**
@@ -45,7 +45,7 @@ class Receta
     /**
      * @var Collection<int, RecetasNutrientes>
      */
-    #[ORM\OneToMany(targetEntity: RecetasNutrientes::class, mappedBy: 'receta')]
+    #[ORM\OneToMany(targetEntity: RecetasNutrientes::class, mappedBy: 'receta', cascade: ['persist'])]
     private Collection $valoresNutritivos;
 
     #[ORM\Column]

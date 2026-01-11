@@ -85,13 +85,18 @@ final class RecipeController extends AbstractController
             }
 
             // Valido campos obligatorios: titulo, comensales
-            if (!isset($data['titulo'])) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El campo titulo es obligatorio");
+            if (!isset($data['title'])) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El campo title es obligatorio");
                 return new JsonResponse($errorMensaje, 400);
             }
 
-            if (!isset($data['comensales'])) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El campo comensales es obligatorio");
+            if (!isset($data['number-diner'])) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El campo number-diner es obligatorio");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            if ($data['number-diner'] <= 0) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El número de comensales debe ser positivo");
                 return new JsonResponse($errorMensaje, 400);
             }
 
@@ -150,6 +155,10 @@ final class RecipeController extends AbstractController
                     $errorMensaje = new RespuestaErrorDTO(400, "Datos de ingrediente incompletos");
                     return new JsonResponse($errorMensaje, 400);
                 }
+                if ($ingData['quantity'] <= 0) {
+                     $errorMensaje = new RespuestaErrorDTO(400, "La cantidad del ingrediente debe ser positiva (> 0)");
+                     return new JsonResponse($errorMensaje, 400);
+                }
                 $ingrediente = new Ingrediente();
                 $ingrediente->setNombre($ingData['name']);
                 $ingrediente->setCantidad($ingData['quantity']);
@@ -174,6 +183,10 @@ final class RecipeController extends AbstractController
                 foreach ($data['nutrients'] as $nutData) {
                     if (!isset($nutData['type-id'], $nutData['quantity'])) {
                         $errorMensaje = new RespuestaErrorDTO(400, "Datos de nutriente incompletos");
+                        return new JsonResponse($errorMensaje, 400);
+                    }
+                    if ($nutData['quantity'] < 0) {
+                        $errorMensaje = new RespuestaErrorDTO(400, "La cantidad del nutriente no puede ser negativa");
                         return new JsonResponse($errorMensaje, 400);
                     }
                     $tipoNutriente = $tipoNutrienteRepo->find($nutData['type-id']);

@@ -182,11 +182,42 @@ final class RecipeController extends AbstractController
             /// Monto Respuesta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error General: " . $th->getMessage());
+            $errorMensaje = new RespuestaErrorDTO(1000, "Error General");
             return new JsonResponse($errorMensaje, 500);
         }
     }
 
+    #[Route('/recipes/{id}', name: 'delete_recipe', methods: ['DELETE'])]
+    public function deleteRecipe(int $id): JsonResponse
+    {
+        try {
+            // Buscamos la receta por su ID
+            $receta = $this->entityManager->getRepository(Receta::class)->find($id);
+
+            // Verificamos si existe
+            if (!$receta) {
+                $errorMensaje = new RespuestaErrorDTO(400, "No se encontró la receta con id " . $id);
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Verificamos si ya está eliminada
+            if ($receta->isEliminada()) {
+                $errorMensaje = new RespuestaErrorDTO(400, "La receta con id " . $id . " ya está eliminada");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Realizamos el borrado
+            $receta->setEliminada(true);
+            $this->entityManager->flush();
+
+            return $this->json(['message' => 'Receta eliminada correctamente']);
+
+        } catch (\Throwable $th) {
+            $errorMensaje = new RespuestaErrorDTO(500, "Error General");
+            return new JsonResponse($errorMensaje, 500);
+        }
+    }
+    
 
     private function esEnteroPositivo(string $valor): bool
     {

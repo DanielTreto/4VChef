@@ -206,9 +206,16 @@ final class RecipeController extends AbstractController
     }
 
     #[Route('/recipes/{id}', name: 'delete_recipe', methods: ['DELETE'])]
-    public function deleteRecipe(int $id): JsonResponse
+    public function deleteRecipe(string $id): JsonResponse
     {
         try {
+            // Validar ID receta
+            if (!$this->esEnteroPositivo($id)) {
+                return $this->devolverError(400, "El ID de la receta debe ser un entero positivo");
+            }
+
+            $id = (int)$id;
+
             // Buscamos la receta por su ID
             $receta = $this->entityManager->getRepository(Receta::class)->find($id);
 

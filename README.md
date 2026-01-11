@@ -20,8 +20,6 @@ Bienvenido a la API RESTful de **4VChef**, una aplicación desarrollada con Symf
 2.  **Instalar dependencias:**
     ```bash
     composer install
-    composer require symfony/orm-pack
-    composer require --dev symfony/maker-bundle
     ```
 
 3.  **Configurar base de datos:**
@@ -34,6 +32,7 @@ Bienvenido a la API RESTful de **4VChef**, una aplicación desarrollada con Symf
 5.  **Crear base de datos y esquema:**
     ```bash
     php bin/console doctrine:database:create
+    php bin/console make:migration
     php bin/console doctrine:migrations:migrate
     ```
 

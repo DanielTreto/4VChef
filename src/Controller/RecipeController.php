@@ -35,7 +35,7 @@ final class RecipeController extends AbstractController
 
             // Valido el tipo, que debe de ser un entero
             if ($tipo != null && !$this->esEnteroPositivo($tipo)) {
-                $errorMensaje = new RespuestaErrorDTO(10, "El tipo debe ser un entero positivo");
+                $errorMensaje = new RespuestaErrorDTO(400, "El tipo debe ser un entero positivo");
                 return new JsonResponse($errorMensaje, 400);
             }
 
@@ -63,7 +63,7 @@ final class RecipeController extends AbstractController
 
             return $this->json($recetasDTO);
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar recetas");
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al recuperar recetas");
             return new JsonResponse($errorMensaje, 500);
         }
     }
@@ -187,7 +187,7 @@ final class RecipeController extends AbstractController
             /// Monto Respuesta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error al crear la receta");
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al crear la receta");
             return new JsonResponse($errorMensaje, 500);
         }
     }

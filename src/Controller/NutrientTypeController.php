@@ -32,7 +32,7 @@ final class NutrientTypeController extends AbstractController
 
             return $this->json($tipoNutrientesDTO);
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar tipos de nutrientes");
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al recuperar tipos de nutrientes");
             return new JsonResponse($errorMensaje, 500);
         }
     }

@@ -22,19 +22,18 @@ final class RecipeTypeController extends AbstractController
 
             // Recupero la información de BBDD
             $tiposRecetasBBDD = $this->entityManager
-                                        ->getRepository(TipoReceta::class)
-                                        ->findAll();
+                ->getRepository(TipoReceta::class)
+                ->findAll();
 
             // Convierto de Entidades a DTO
             $tipoRecetaDTO = [];
             foreach ($tiposRecetasBBDD as $tipoRecetaEntidad) {
-                $tipoRecetaDTO[] = new TipoRecetaDTO($tipoRecetaEntidad->getId(),$tipoRecetaEntidad->getNombre(),$tipoRecetaEntidad->getDescripcion());
+                $tipoRecetaDTO[] = new TipoRecetaDTO($tipoRecetaEntidad->getId(), $tipoRecetaEntidad->getNombre(), $tipoRecetaEntidad->getDescripcion());
             }
 
             return $this->json($tipoRecetaDTO);
-
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar tipos de recetas");
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al recuperar tipos de recetas");
             return new JsonResponse($errorMensaje, 500);
         }
     }

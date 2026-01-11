@@ -35,7 +35,7 @@ final class RecipeController extends AbstractController
 
             // Valido el tipo, que debe de ser un entero
             if ($tipo != null && !$this->esEnteroPositivo($tipo)) {
-                $errorMensaje = new RespuestaErrorDTO(10, "Validación tipo receta invalida");
+                $errorMensaje = new RespuestaErrorDTO(10, "El tipo debe ser un entero positivo");
                 return new JsonResponse($errorMensaje, 400);
             }
 
@@ -226,15 +226,15 @@ final class RecipeController extends AbstractController
     public function voteRecipe(string $id, string $rate, Request $request): JsonResponse
     {
         try {
-            // Validar ID positivo
+            // Validar ID receta
             if (!$this->esEnteroPositivo($id)) {
                 $errorMensaje = new RespuestaErrorDTO(400, "El ID de la receta debe ser un entero positivo");
                 return new JsonResponse($errorMensaje, 400);
             }
 
-            // Validar Rate positivo
-            if (!$this->esEnteroPositivo($rate)) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El Rate de la receta debe ser un entero positivo");
+            // Validar calificación
+            if (!ctype_digit($rate) || $rate < 0 || $rate > 5) {
+                $errorMensaje = new RespuestaErrorDTO(400, "La calificación de la receta debe ser un entero entre 0 y 5");
                 return new JsonResponse($errorMensaje, 400);
             }
 
@@ -245,12 +245,6 @@ final class RecipeController extends AbstractController
             $receta = $this->entityManager->getRepository(Receta::class)->find($id);
             if (!$receta || $receta->isEliminada()) {
                 $errorMensaje = new RespuestaErrorDTO(400, "No se encontró la receta con id " . $id);
-                return new JsonResponse($errorMensaje, 400);
-            }
-
-            // Validar el voto
-            if ($rate < 0 || $rate > 5) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El voto debe ser un entero entre 0 y 5");
                 return new JsonResponse($errorMensaje, 400);
             }
 

@@ -101,8 +101,12 @@ final class RecipeController extends AbstractController
 
             // Validar Tipo de Receta (Solo si se envía)
             $tipoReceta = null;
-            if (isset($data['tipo-id'])) {
-                $tipoReceta = $tipoRecetaRepo->find($data['tipo-id']);
+            if (isset($data['type-id'])) {
+                if (!$this->esEnteroPositivo((string)$data['type-id'])) {
+                     $errorMensaje = new RespuestaErrorDTO(400, "El type-id debe ser un entero positivo");
+                     return new JsonResponse($errorMensaje, 400);
+                }
+                $tipoReceta = $tipoRecetaRepo->find($data['type-id']);
                 if (!$tipoReceta) {
                     $errorMensaje = new RespuestaErrorDTO(400, "El tipo de receta no existe");
                     return new JsonResponse($errorMensaje, 400);
@@ -110,24 +114,24 @@ final class RecipeController extends AbstractController
             }
 
             // Validar Ingredientes (> 0)
-            if (!isset($data['ingredientes']) || !is_array($data['ingredientes']) || count($data['ingredientes']) < 1) {
+            if (!isset($data['ingredients']) || !is_array($data['ingredients']) || count($data['ingredients']) < 1) {
                 $errorMensaje = new RespuestaErrorDTO(400, "La receta debe tener al menos 1 ingrediente");
                 return new JsonResponse($errorMensaje, 400);
             }
 
             // Validar Pasos (> 0)
-            if (!isset($data['pasos']) || !is_array($data['pasos']) || count($data['pasos']) < 1) {
+            if (!isset($data['steps']) || !is_array($data['steps']) || count($data['steps']) < 1) {
                 $errorMensaje = new RespuestaErrorDTO(400, "La receta debe tener al menos 1 paso");
                 return new JsonResponse($errorMensaje, 400);
             }
 
             // Validar Nutrientes
-            if (isset($data['nutrientes']) && is_array($data['nutrientes'])) {
-                foreach ($data['nutrientes'] as $index => $nutData) {
+            if (isset($data['nutrients']) && is_array($data['nutrients'])) {
+                foreach ($data['nutrients'] as $index => $nutData) {
                     // Buscamos si existe el tipo
-                    $existeTipo = $tipoNutrienteRepo->find($nutData['tipo-id']);
+                    $existeTipo = $tipoNutrienteRepo->find($nutData['type-id']);
                     if (!$existeTipo) {
-                        $errorMensaje = new RespuestaErrorDTO(400, "El tipo de nutriente con ID " . $nutData['tipo-id'] . " no existe");
+                        $errorMensaje = new RespuestaErrorDTO(400, "El tipo de nutriente con ID " . $nutData['type-id'] . " no existe");
                         return new JsonResponse($errorMensaje, 400);
                     }
                 }
@@ -135,47 +139,47 @@ final class RecipeController extends AbstractController
 
             // Crear Entidad Receta
             $receta = new Receta();
-            $receta->setTitulo($data['titulo']);
-            $receta->setComensales($data['comensales']);
+            $receta->setTitulo($data['title']);
+            $receta->setComensales($data['number-diner']);
             $receta->setTipo($tipoReceta);
             $receta->setEliminada(false);
 
             // Añadir Ingredientes
-            foreach ($data['ingredientes'] as $ingData) {
-                if (!isset($ingData['nombre'], $ingData['cantidad'], $ingData['unidad'])) {
+            foreach ($data['ingredients'] as $ingData) {
+                if (!isset($ingData['name'], $ingData['quantity'], $ingData['unit'])) {
                     $errorMensaje = new RespuestaErrorDTO(400, "Datos de ingrediente incompletos");
                     return new JsonResponse($errorMensaje, 400);
                 }
                 $ingrediente = new Ingrediente();
-                $ingrediente->setNombre($ingData['nombre']);
-                $ingrediente->setCantidad($ingData['cantidad']);
-                $ingrediente->setUnidad($ingData['unidad']);
+                $ingrediente->setNombre($ingData['name']);
+                $ingrediente->setCantidad($ingData['quantity']);
+                $ingrediente->setUnidad($ingData['unit']);
                 $receta->addIngrediente($ingrediente);
             }
 
             // Añadir Pasos
-            foreach ($data['pasos'] as $stepData) {
-                if (!isset($stepData['orden'], $stepData['descripcion'])) {
+            foreach ($data['steps'] as $stepData) {
+                if (!isset($stepData['order'], $stepData['description'])) {
                     $errorMensaje = new RespuestaErrorDTO(400, "Datos de paso incompletos");
                     return new JsonResponse($errorMensaje, 400);
                 }
                 $paso = new Paso();
-                $paso->setOrden($stepData['orden']);
-                $paso->setDescripcion($stepData['descripcion']);
+                $paso->setOrden($stepData['order']);
+                $paso->setDescripcion($stepData['description']);
                 $receta->addPaso($paso);
             }
 
             // Añadir Nutrientes
-            if (isset($data['nutrientes']) && is_array($data['nutrientes'])) {
-                foreach ($data['nutrientes'] as $nutData) {
-                    if (!isset($nutData['tipo-id'], $nutData['cantidad'])) {
+            if (isset($data['nutrients']) && is_array($data['nutrients'])) {
+                foreach ($data['nutrients'] as $nutData) {
+                    if (!isset($nutData['type-id'], $nutData['quantity'])) {
                         $errorMensaje = new RespuestaErrorDTO(400, "Datos de nutriente incompletos");
                         return new JsonResponse($errorMensaje, 400);
                     }
-                    $tipoNutriente = $tipoNutrienteRepo->find($nutData['tipo-id']);
+                    $tipoNutriente = $tipoNutrienteRepo->find($nutData['type-id']);
                     $nutriente = new RecetasNutrientes();
                     $nutriente->setTipo($tipoNutriente);
-                    $nutriente->setCantidad($nutData['cantidad']);
+                    $nutriente->setCantidad($nutData['quantity']);
                     $receta->addValoresNutritivo($nutriente);
                 }
             }
@@ -215,7 +219,8 @@ final class RecipeController extends AbstractController
             $receta->setEliminada(true);
             $this->entityManager->flush();
 
-            return $this->json(['message' => 'Receta eliminada correctamente']);
+            // Devolvemos el objeto Receta
+            return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
             $errorMensaje = new RespuestaErrorDTO(500, "Error al eliminar la receta");
             return new JsonResponse($errorMensaje, 500);
@@ -274,8 +279,8 @@ final class RecipeController extends AbstractController
             $this->entityManager->persist($valoracion);
             $this->entityManager->flush();
 
-            // Devolvemos el objeto ValoracionDTO
-            return $this->json(new ValoracionDTO($valoracion->getId(), $valoracion->getReceta()->getId(), $valoracion->getCalificacion()));
+            // Devolvemos el objeto Receta
+            return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
             $errorMensaje = new RespuestaErrorDTO(500, "Error al registrar el voto");
             return new JsonResponse($errorMensaje, 500);
@@ -330,7 +335,20 @@ final class RecipeController extends AbstractController
             );
         }
 
-        // 5. Crear el RecetaDTO final
+        // 5. Valoraciones (Calculado)
+        $valoraciones = $receta->getValoraciones();
+        $numVotos = count($valoraciones);
+        $avgCalificacion = 0;
+        if ($numVotos > 0) {
+            $total = 0;
+            foreach ($valoraciones as $v) {
+                $total += $v->getCalificacion();
+            }
+            $avgCalificacion = $total / $numVotos;
+        }
+        $ratingDTO = new ValoracionDTO($numVotos, $avgCalificacion);
+
+        // 6. Crear el RecetaDTO final
         return new RecetaDTO(
             $receta->getId(),
             $receta->getTitulo(),
@@ -338,7 +356,8 @@ final class RecipeController extends AbstractController
             $tipoDTO,
             $ingredientesDTO,
             $pasosDTO,
-            $nutrientesDTO
+            $nutrientesDTO,
+            $ratingDTO
         );
     }
 }

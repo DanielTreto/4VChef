@@ -5,7 +5,7 @@ namespace App\Model;
 class PasoDTO
 {
     public function __construct(
-        public int $orden,
-        public string $descripcion
+        public int $order,
+        public string $description
     ) {}
 }

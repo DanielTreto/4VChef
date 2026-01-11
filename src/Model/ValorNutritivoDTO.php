@@ -5,7 +5,7 @@ namespace App\Model;
 class ValorNutritivoDTO
 {
     public function __construct(
-        public TipoNutrienteDTO $nutriente,
-        public float $cantidad,
+        public TipoNutrienteDTO $type,
+        public float $quantity,
     ) {}
 }

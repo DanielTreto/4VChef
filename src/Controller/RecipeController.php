@@ -32,11 +32,9 @@ final class RecipeController extends AbstractController
     public function getAllRecipes(#[MapQueryParameter(name: 'type')] ?string $tipo  = null): JsonResponse
     {
         try {
-
             // Valido el tipo, que debe de ser un entero
             if ($tipo != null && !$this->esEnteroPositivo($tipo)) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El tipo debe ser un entero positivo");
-                return new JsonResponse($errorMensaje, 400);
+                 return $this->devolverError(400, "El tipo debe ser un entero positivo");
             }
 
             // Si hay tipo entonces busco por tipo, sino busco cualquiera
@@ -63,8 +61,7 @@ final class RecipeController extends AbstractController
 
             return $this->json($recetasDTO);
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(500, "Error al recuperar recetas");
-            return new JsonResponse($errorMensaje, 500);
+            return $this->devolverError(500, "Error al recuperar recetas");
         }
     }
 
@@ -77,27 +74,24 @@ final class RecipeController extends AbstractController
             $jsonBody = $request->getContent(); // Obtiene el cuerpo como texto
             $data = json_decode($jsonBody, true); // Lo decodifica a un array asociativo
 
-            /// VALIDACIONES
+            // VALIDACIONES
 
             // Manejo de errores si el JSON no es válido
             if (json_last_error() !== JSON_ERROR_NONE) {
-                return $this->json(['error' => 'JSON inválido'], 400);
+                return $this->devolverError(400, 'JSON inválido'); 
             }
 
             // Valido campos obligatorios: titulo, comensales
-            if (!isset($data['title'])) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El campo title es obligatorio");
-                return new JsonResponse($errorMensaje, 400);
+            if (!isset($data['title']) || $this->estaVacio($data['title'])) {
+                 return $this->devolverError(400, "El campo title es obligatorio y no puede estar vacío");
             }
 
             if (!isset($data['number-diner'])) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El campo number-diner es obligatorio");
-                return new JsonResponse($errorMensaje, 400);
+                 return $this->devolverError(400, "El campo number-diner es obligatorio");
             }
 
             if ($data['number-diner'] <= 0) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El número de comensales debe ser positivo");
-                return new JsonResponse($errorMensaje, 400);
+                 return $this->devolverError(400, "El número de comensales debe ser positivo");
             }
 
             // Repositorios
@@ -108,26 +102,22 @@ final class RecipeController extends AbstractController
             $tipoReceta = null;
             if (isset($data['type-id'])) {
                 if (!$this->esEnteroPositivo((string)$data['type-id'])) {
-                     $errorMensaje = new RespuestaErrorDTO(400, "El type-id debe ser un entero positivo");
-                     return new JsonResponse($errorMensaje, 400);
+                     return $this->devolverError(400, "El type-id debe ser un entero positivo");
                 }
                 $tipoReceta = $tipoRecetaRepo->find($data['type-id']);
                 if (!$tipoReceta) {
-                    $errorMensaje = new RespuestaErrorDTO(400, "El tipo de receta no existe");
-                    return new JsonResponse($errorMensaje, 400);
+                    return $this->devolverError(400, "El tipo de receta no existe");
                 }
             }
 
             // Validar Ingredientes (> 0)
             if (!isset($data['ingredients']) || !is_array($data['ingredients']) || count($data['ingredients']) < 1) {
-                $errorMensaje = new RespuestaErrorDTO(400, "La receta debe tener al menos 1 ingrediente");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "La receta debe tener al menos 1 ingrediente");
             }
 
             // Validar Pasos (> 0)
             if (!isset($data['steps']) || !is_array($data['steps']) || count($data['steps']) < 1) {
-                $errorMensaje = new RespuestaErrorDTO(400, "La receta debe tener al menos 1 paso");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "La receta debe tener al menos 1 paso");
             }
 
             // Validar Nutrientes
@@ -136,8 +126,7 @@ final class RecipeController extends AbstractController
                     // Buscamos si existe el tipo
                     $existeTipo = $tipoNutrienteRepo->find($nutData['type-id']);
                     if (!$existeTipo) {
-                        $errorMensaje = new RespuestaErrorDTO(400, "El tipo de nutriente con ID " . $nutData['type-id'] . " no existe");
-                        return new JsonResponse($errorMensaje, 400);
+                        return $this->devolverError(400, "El tipo de nutriente con ID " . $nutData['type-id'] . " no existe");
                     }
                 }
             }
@@ -151,13 +140,17 @@ final class RecipeController extends AbstractController
 
             // Añadir Ingredientes
             foreach ($data['ingredients'] as $ingData) {
+                // Validar campos obligatorios
                 if (!isset($ingData['name'], $ingData['quantity'], $ingData['unit'])) {
-                    $errorMensaje = new RespuestaErrorDTO(400, "Datos de ingrediente incompletos");
-                    return new JsonResponse($errorMensaje, 400);
+                    return $this->devolverError(400, "Datos de ingrediente incompletos");
                 }
+                // Validar campos no vacíos
+                if ($this->estaVacio($ingData['name']) || $this->estaVacio($ingData['unit'])) {
+                     return $this->devolverError(400, "El nombre y unidad del ingrediente no pueden estar vacíos");
+                }
+                // Validar cantidad > 0
                 if ($ingData['quantity'] <= 0) {
-                     $errorMensaje = new RespuestaErrorDTO(400, "La cantidad del ingrediente debe ser positiva (> 0)");
-                     return new JsonResponse($errorMensaje, 400);
+                     return $this->devolverError(400, "La cantidad del ingrediente debe ser positiva (> 0)");
                 }
                 $ingrediente = new Ingrediente();
                 $ingrediente->setNombre($ingData['name']);
@@ -168,9 +161,13 @@ final class RecipeController extends AbstractController
 
             // Añadir Pasos
             foreach ($data['steps'] as $stepData) {
+                // Validar campos obligatorios
                 if (!isset($stepData['order'], $stepData['description'])) {
-                    $errorMensaje = new RespuestaErrorDTO(400, "Datos de paso incompletos");
-                    return new JsonResponse($errorMensaje, 400);
+                    return $this->devolverError(400, "Datos de paso incompletos");
+                }
+                // Validar campos no vacíos
+                if ($this->estaVacio($stepData['description'])) {
+                     return $this->devolverError(400, "La descripción del paso no puede estar vacía");
                 }
                 $paso = new Paso();
                 $paso->setOrden($stepData['order']);
@@ -181,13 +178,13 @@ final class RecipeController extends AbstractController
             // Añadir Nutrientes
             if (isset($data['nutrients']) && is_array($data['nutrients'])) {
                 foreach ($data['nutrients'] as $nutData) {
+                    // Validar campos obligatorios
                     if (!isset($nutData['type-id'], $nutData['quantity'])) {
-                        $errorMensaje = new RespuestaErrorDTO(400, "Datos de nutriente incompletos");
-                        return new JsonResponse($errorMensaje, 400);
+                        return $this->devolverError(400, "Datos de nutriente incompletos");
                     }
+                    // Validar cantidad >= 0
                     if ($nutData['quantity'] < 0) {
-                        $errorMensaje = new RespuestaErrorDTO(400, "La cantidad del nutriente no puede ser negativa");
-                        return new JsonResponse($errorMensaje, 400);
+                        return $this->devolverError(400, "La cantidad del nutriente no puede ser negativa");
                     }
                     $tipoNutriente = $tipoNutrienteRepo->find($nutData['type-id']);
                     $nutriente = new RecetasNutrientes();
@@ -197,15 +194,14 @@ final class RecipeController extends AbstractController
                 }
             }
 
-            /// Persistimos
+            // Persistimos
             $this->entityManager->persist($receta);
             $this->entityManager->flush();
 
-            /// Monto Respuesta
+            // Monto Respuesta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(500, "Error al crear la receta");
-            return new JsonResponse($errorMensaje, 500);
+            return $this->devolverError(500, "Error al crear la receta");
         }
     }
 
@@ -218,14 +214,12 @@ final class RecipeController extends AbstractController
 
             // Verificamos si existe
             if (!$receta) {
-                $errorMensaje = new RespuestaErrorDTO(400, "No se encontró la receta con id " . $id);
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "No se encontró la receta con id " . $id);
             }
 
             // Verificamos si ya está eliminada
             if ($receta->isEliminada()) {
-                $errorMensaje = new RespuestaErrorDTO(400, "La receta con id " . $id . " ya está eliminada");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "La receta con id " . $id . " ya está eliminada");
             }
 
             // Realizamos el borrado
@@ -235,8 +229,7 @@ final class RecipeController extends AbstractController
             // Devolvemos el objeto Receta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(500, "Error al eliminar la receta");
-            return new JsonResponse($errorMensaje, 500);
+            return $this->devolverError(500, "Error al eliminar la receta");
         }
     }
 
@@ -246,14 +239,12 @@ final class RecipeController extends AbstractController
         try {
             // Validar ID receta
             if (!$this->esEnteroPositivo($id)) {
-                $errorMensaje = new RespuestaErrorDTO(400, "El ID de la receta debe ser un entero positivo");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "El ID de la receta debe ser un entero positivo");
             }
 
             // Validar calificación
             if (!ctype_digit($rate) || $rate < 0 || $rate > 5) {
-                $errorMensaje = new RespuestaErrorDTO(400, "La calificación de la receta debe ser un entero entre 0 y 5");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "La calificación de la receta debe ser un entero entre 0 y 5");
             }
 
             $id = (int)$id;
@@ -262,8 +253,7 @@ final class RecipeController extends AbstractController
             // Validar existencia de la receta
             $receta = $this->entityManager->getRepository(Receta::class)->find($id);
             if (!$receta || $receta->isEliminada()) {
-                $errorMensaje = new RespuestaErrorDTO(400, "No se encontró la receta con id " . $id);
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "No se encontró la receta con id " . $id);
             }
 
             // Validar IP única
@@ -279,8 +269,7 @@ final class RecipeController extends AbstractController
             ]);
 
             if ($votoExistente) {
-                $errorMensaje = new RespuestaErrorDTO(400, "Error: Ya has votado esta receta desde esta IP");
-                return new JsonResponse($errorMensaje, 400);
+                return $this->devolverError(400, "Error: Ya has votado esta receta desde esta IP");
             }
 
             // Persistir Valoración
@@ -295,9 +284,21 @@ final class RecipeController extends AbstractController
             // Devolvemos el objeto Receta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(500, "Error al registrar el voto");
-            return new JsonResponse($errorMensaje, 500);
+            return $this->devolverError(500, "Error al registrar el voto");
         }
+    }
+
+    // Devuelve un error
+    private function devolverError(int $statusCode, string $message): JsonResponse
+    {
+        $errorMensaje = new RespuestaErrorDTO($statusCode, $message);
+        return new JsonResponse($errorMensaje, $statusCode);
+    }
+
+    // Comprueba si una cadena está vacía o solo contiene espacios
+    private function estaVacio(?string $value): bool
+    {
+        return empty($value) || trim($value) === '';
     }
 
     private function esEnteroPositivo(string $valor): bool

@@ -21,19 +21,18 @@ final class NutrientTypeController extends AbstractController
 
             // Recupero la información de BBDD
             $tiposNutrienteBBDD = $this->entityManager
-                                        ->getRepository(TipoNutriente::class)
-                                        ->findAll();
+                ->getRepository(TipoNutriente::class)
+                ->findAll();
 
             // Convierto de Entidades a DTO
             $tipoNutrientesDTO = [];
             foreach ($tiposNutrienteBBDD as $tipoNutrienteEntidad) {
-                $tipoNutrientesDTO[] = new TipoNutrienteDTO($tipoNutrienteEntidad->getId(),$tipoNutrienteEntidad->getNombre(),$tipoNutrienteEntidad->getUnidad());
+                $tipoNutrientesDTO[] = new TipoNutrienteDTO($tipoNutrienteEntidad->getId(), $tipoNutrienteEntidad->getNombre(), $tipoNutrienteEntidad->getUnidad());
             }
 
             return $this->json($tipoNutrientesDTO);
-
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error General");
+            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar tipos de nutrientes");
             return new JsonResponse($errorMensaje, 500);
         }
     }

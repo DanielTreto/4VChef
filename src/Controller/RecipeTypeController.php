@@ -34,7 +34,7 @@ final class RecipeTypeController extends AbstractController
             return $this->json($tipoRecetaDTO);
 
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error General");
+            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar tipos de recetas");
             return new JsonResponse($errorMensaje, 500);
         }
     }

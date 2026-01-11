@@ -6,12 +6,17 @@ use App\Entity\Paso;
 use App\Entity\Receta;
 use App\Model\PasoDTO;
 use App\Model\RecetaDTO;
+use App\Entity\TipoReceta;
+use App\Entity\Valoracion;
 use App\Entity\Ingrediente;
 use App\Model\TipoRecetaDTO;
+use App\Entity\TipoNutriente;
 use App\Model\IngredienteDTO;
 use App\Model\TipoNutrienteDTO;
 use App\Model\RespuestaErrorDTO;
 use App\Model\ValorNutritivoDTO;
+use App\Entity\RecetasNutrientes;
+use App\Model\ValoracionDTO;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -58,7 +63,7 @@ final class RecipeController extends AbstractController
 
             return $this->json($recetasDTO);
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error General");
+            $errorMensaje = new RespuestaErrorDTO(1000, "Error al recuperar recetas");
             return new JsonResponse($errorMensaje, 500);
         }
     }
@@ -91,8 +96,8 @@ final class RecipeController extends AbstractController
             }
 
             // Repositorios
-            $tipoRecetaRepo = $this->entityManager->getRepository(\App\Entity\TipoReceta::class);
-            $tipoNutrienteRepo = $this->entityManager->getRepository(\App\Entity\TipoNutriente::class);
+            $tipoRecetaRepo = $this->entityManager->getRepository(TipoReceta::class);
+            $tipoNutrienteRepo = $this->entityManager->getRepository(TipoNutriente::class);
 
             // Validar Tipo de Receta (Solo si se envía)
             $tipoReceta = null;
@@ -138,8 +143,8 @@ final class RecipeController extends AbstractController
             // Añadir Ingredientes
             foreach ($data['ingredientes'] as $ingData) {
                 if (!isset($ingData['nombre'], $ingData['cantidad'], $ingData['unidad'])) {
-                     $errorMensaje = new RespuestaErrorDTO(400, "Datos de ingrediente incompletos");
-                     return new JsonResponse($errorMensaje, 400);
+                    $errorMensaje = new RespuestaErrorDTO(400, "Datos de ingrediente incompletos");
+                    return new JsonResponse($errorMensaje, 400);
                 }
                 $ingrediente = new Ingrediente();
                 $ingrediente->setNombre($ingData['nombre']);
@@ -151,8 +156,8 @@ final class RecipeController extends AbstractController
             // Añadir Pasos
             foreach ($data['pasos'] as $stepData) {
                 if (!isset($stepData['orden'], $stepData['descripcion'])) {
-                     $errorMensaje = new RespuestaErrorDTO(400, "Datos de paso incompletos");
-                     return new JsonResponse($errorMensaje, 400);
+                    $errorMensaje = new RespuestaErrorDTO(400, "Datos de paso incompletos");
+                    return new JsonResponse($errorMensaje, 400);
                 }
                 $paso = new Paso();
                 $paso->setOrden($stepData['orden']);
@@ -182,7 +187,7 @@ final class RecipeController extends AbstractController
             /// Monto Respuesta
             return $this->json($this->toDTO($receta));
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(1000, "Error General");
+            $errorMensaje = new RespuestaErrorDTO(1000, "Error al crear la receta");
             return new JsonResponse($errorMensaje, 500);
         }
     }
@@ -211,13 +216,77 @@ final class RecipeController extends AbstractController
             $this->entityManager->flush();
 
             return $this->json(['message' => 'Receta eliminada correctamente']);
-
         } catch (\Throwable $th) {
-            $errorMensaje = new RespuestaErrorDTO(500, "Error General");
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al eliminar la receta");
             return new JsonResponse($errorMensaje, 500);
         }
     }
-    
+
+    #[Route('/recipes/{id}/rating/{rate}', name: 'vote_recipe', methods: ['POST'])]
+    public function voteRecipe(string $id, string $rate, Request $request): JsonResponse
+    {
+        try {
+            // Validar ID positivo
+            if (!$this->esEnteroPositivo($id)) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El ID de la receta debe ser un entero positivo");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Validar Rate positivo
+            if (!$this->esEnteroPositivo($rate)) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El Rate de la receta debe ser un entero positivo");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            $id = (int)$id;
+            $rate = (int)$rate;
+
+            // Validar existencia de la receta
+            $receta = $this->entityManager->getRepository(Receta::class)->find($id);
+            if (!$receta || $receta->isEliminada()) {
+                $errorMensaje = new RespuestaErrorDTO(400, "No se encontró la receta con id " . $id);
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Validar el voto
+            if ($rate < 0 || $rate > 5) {
+                $errorMensaje = new RespuestaErrorDTO(400, "El voto debe ser un entero entre 0 y 5");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Validar IP única
+            $clientIp = $request->getClientIp() ?? 'Unknown';
+
+            // Repositorio de Valoraciones
+            $valoracionRepo = $this->entityManager->getRepository(Valoracion::class);
+
+            // Buscamos si ya existe una valoración de esta IP para esta Receta
+            $votoExistente = $valoracionRepo->findOneBy([
+                'receta' => $receta,
+                'ip' => $clientIp
+            ]);
+
+            if ($votoExistente) {
+                $errorMensaje = new RespuestaErrorDTO(400, "Error: Ya has votado esta receta desde esta IP");
+                return new JsonResponse($errorMensaje, 400);
+            }
+
+            // Persistir Valoración
+            $valoracion = new Valoracion();
+            $valoracion->setCalificacion($rate);
+            $valoracion->setIp($clientIp);
+            $valoracion->setReceta($receta);
+
+            $this->entityManager->persist($valoracion);
+            $this->entityManager->flush();
+
+            // Devolvemos el objeto ValoracionDTO
+            return $this->json(new ValoracionDTO($valoracion->getId(), $valoracion->getReceta()->getId(), $valoracion->getCalificacion()));
+        } catch (\Throwable $th) {
+            $errorMensaje = new RespuestaErrorDTO(500, "Error al registrar el voto");
+            return new JsonResponse($errorMensaje, 500);
+        }
+    }
 
     private function esEnteroPositivo(string $valor): bool
     {
